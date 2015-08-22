@@ -8,13 +8,18 @@ shinyServer(function(input, output) {
                conc_init=as.vector(values$conc),
                vol_init=as.vector(values$vol)) %>% 
       filter(!is.na(conc_init), !is.na(vol_init)) %>% 
-      buildWorkplan(vol_dead=10, vol_min=10, vol_max=200)
+      buildWorkplan(vol_dead=vol_dead, vol_min=vol_min, vol_max=vol_max)
   })
   
-  observeEvent(work_plan(), {
-    print(work_plan())
+  work_list <- eventReactive(work_plan(), {
+    buildWorklist(work_plan(), vol_max, vol_min, source_plate, dest_plate)
   })
   
+  work_list1 <- eventReactive(work_plan(), {
+    buildWorklist1(work_plan(), vol_max, vol_min, diluent, dest_plate, n_tips)
+  })
+  
+
   observeEvent(input$load_conc, {
     input$load_conc$datapath %>% 
       readData() -> values$conc
@@ -34,8 +39,14 @@ shinyServer(function(input, output) {
       set_rownames(LETTERS[1:8]) -> values$vol
   })
   
+  observeEvent(input$fill, {
+    values$vol <- matrix(rep(input$uni_vol, times=96), nrow=8) %>% 
+      set_rownames(LETTERS[1:8]) %>% 
+      set_colnames(1:12)
+  })
+  
   observeEvent(input$start_tecan, {
-    #runWorkplan
+    runWorkplan(work_list(), work_list1(), script_path, EVOware_path, username, password)
   })
   
   
@@ -55,10 +66,12 @@ shinyServer(function(input, output) {
   })
   
   output$work_plan_DT <- renderDataTable({
+    validate(need(work_plan(), ''))
     work_plan() %>% 
       datatable(options=list(dom='ft', paging=F),
                 class='compact hover nowrap order-column row-border stripe',
-                rownames=F)
+                rownames=F) %>% 
+      formatRound(2:7, 1)
   })
 
 
