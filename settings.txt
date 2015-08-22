@@ -1,0 +1,11 @@
+vol_max: 200                                                          # max volumn of LiHa tips
+vol_min: 10                                                           # min volumn of LiHa tips
+n_tips: 8                                                             # number of LiHa tips
+vol_dead: 10                                                          # dead volumn of source plate
+source_plate: Source1                                                 # labware lable of source plate
+dest plate: Dest1                                                     # labware label of dest plate
+diluent: Source                                                       # labware label of diluent
+username: username                                                    # username of EVOware
+password: password                                                    # password of EVOware
+script_path: D:\user\script.esc                                       # path ot script file
+EOVware_path: C:\Program Files (x86)\TECAN\EVOware\Evoware.exe        # path to Evoware.exe
