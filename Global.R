@@ -24,10 +24,29 @@ library(stringr)
 # "Source": lavware lable of diluent
 # 8: number of LiHa tips
 
+# load settings
+settings <- readLines('settings.txt') %>% 
+  str_match(':[[:blank:]]*(.+?)[[:blank:]]*#') %>% 
+  .[, 2]
+vol_max <- as.numeric(settings[1])
+vol_min <- as.numeric(settings[2])
+n_tips <- as.numeric(settings[3])
+vol_dead <- as.numeric(settings[4])
+source_plate <- as.character(settings[5])
+dest_plate <- as.character(settings[6])
+diluent <- as.character(settings[7])
+username <- as.character(settings[8])
+password <- as.character(settings[9])
+script_path <- as.character(settings[10])
+EVOware_path <- as.character(settings[11])
+
+
+
 # init matrix for conc_init and vol_init of source plate
 INIT_MATRIX <- matrix(rep(as.numeric(NA), times=96), nrow=8) %>% 
   set_rownames(LETTERS[1:8]) %>% 
   set_colnames(1:12)
+
 
 # Helper functions --------------------------------------------------------
 
@@ -115,20 +134,23 @@ calcVolSolution <- function(vol_source, conc_init, conc_final){
 }
 
 
-# split a large volumn into smaller volumns to match vol_max and vol_min of LiHa
-splitVol <- function(vol, vol_max, vol_min){
-  if(vol < vol_min) return(list())
-  times_max <- vol %/% vol_max
-  left <- vol %% vol_max
-  if(left == 0){
-    out <- rep(vol_max, times=times_max)
-  } else if(left < vol_min) {
-    out <- c(rep(vol_max, times=times_max-1), 
-             rep((left + vol_max) / 2, times=2))
-  } else {
-    out <- c(rep(vol_max, times=times_max), left)
-  }
-  return(list(out))
+# split a vector of large volumns into smaller volumns to match vol_max and vol_min of LiHa
+splitVol <- function(vols, vol_max, vol_min){
+  vols %>% 
+    sapply(function(vol){
+      if(vol < vol_min) return(NA)
+      times_max <- vol %/% vol_max
+      left <- vol %% vol_max
+      if(left == 0){
+        out <- rep(vol_max, times=times_max)
+      } else if(left < vol_min) {
+        out <- c(rep(vol_max, times=times_max-1), 
+                 rep((left + vol_max) / 2, times=2))
+      } else {
+        out <- c(rep(vol_max, times=times_max), left)
+      }
+      return(list(out))
+    })
 }
 
 
@@ -148,43 +170,49 @@ buildWorkplan <- function(data, vol_dead, vol_min, vol_max){
 
 
 # build worklist from workplan for source aspiration
-buildWorklist <- function(workplan, vol_max, vol_min){
+buildWorklist <- function(workplan, vol_max, vol_min, source_plate, dest_plate){
   workplan %>% 
-    transmute(`Source Labware Lable` = 'Source1',
+    transmute(`Source Labware Lable` = source_plate,
               `Source Position` =  position,
-              `Destination Labware Lable` = 'Dest1',
+              `Destination Labware Lable` = dest_plate,
               `Destination Position` = position,
               Volumn = vol_source) %>% 
-    mutate(Volumn=splitVol(volumn, vol_max, vol_min)) %>% 
+    mutate(Volumn=splitVol(Volumn, vol_max, vol_min)) %>% 
     unnest(Volumn) %>% 
+    mutate(Volumn=round(Volumn, 1)) %>% 
     arrange(`Destination Position`)
 }
 
 
 # build worklist1 from workplan for diluent aspiration
-buildWorklist1 <- function(workplan, vol_max, vol_min){
+buildWorklist1 <- function(workplan, vol_max, vol_min, diluent, dest_plate, n_tips){
   workplan %>% 
-    transmute(`Source Labware Lable` = 'Source',
+    transmute(`Source Labware Lable` = diluent,
               `Source Position` =  position,
-              `Destination Labware Lable` = 'Dest1',
+              `Destination Labware Lable` = dest_plate,
               `Destination Position` = position,
-              Volumn = vol_source) %>% 
-    mutate(Volumn=splitVol(volumn, vol_max, vol_min)) %>% 
+              Volumn = vol_diluent) %>% 
+    mutate(Volumn=splitVol(Volumn, vol_max, vol_min)) %>% 
     unnest(Volumn) %>% 
+    filter(!is.na(Volumn)) %>% 
+    mutate(Volumn=round(Volumn, 1)) %>% 
     arrange(`Destination Position`) %>% 
-    mutate(`Source Position` = rep(1:8, length.out=n()))
+    mutate(`Source Position` = rep(1:n_tips, length.out=n()))
 }
 
-# start EOVware and run workplan
-runWorkplan <- function(worklist, worklist1, path, EOVware_path, user_name, password, script_path){
+# start EVOware and run workplan
+runWorkplan <- function(worklist, worklist1, script_path, EVOware_path, username, password){
   
   # output Worklist.csv and Worklist1.csv
-  write.csv(worklist, file=file.path(path, 'Worklist.csv'), row.names=F, quote=F)
-  write.csv(worklist1, file=file.path(path, 'Worklist1.csv'), row.names=F, quote=F)
+  write.csv(worklist, file=file.path(dirname(script_path), 'Worklist.csv'), row.names=F, quote=F)
+  write.csv(worklist1, file=file.path(dirname(script_path), 'Worklist1.csv'), row.names=F, quote=F)
   
-  # start EOVware and run
-  cmd <- paste(EOVware_path, '-u', user_name, '-w', password, '-r', script_path)
+  # start EVOware and run
+  cmd <- paste(paste0('"', EVOware_path, '"'), 
+               '-u', username, '-w', password, '-b',
+               '-r', paste0('"', script_path, '"'))
   shell(cmd)
   
 }
+
 
