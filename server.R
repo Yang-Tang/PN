@@ -29,18 +29,25 @@ shinyServer(function(input, output) {
     input$conc_tbl %>% 
       hot_to_r() %>% 
       .[1:8, 1:12] %>% 
-      set_rownames(LETTERS[1:8]) -> values$conc
+      apply(2, as.double) %>% 
+      set_rownames(LETTERS[1:8]) %>% 
+      set_colnames(1:12) -> values$conc
   })
   
   observeEvent(input$vol_tbl, {
     input$vol_tbl %>% 
       hot_to_r() %>% 
       .[1:8, 1:12] %>% 
-      set_rownames(LETTERS[1:8]) -> values$vol
+      apply(2, as.double) %>% 
+      set_rownames(LETTERS[1:8]) %>% 
+      set_colnames(1:12) -> values$vol
   })
   
   observeEvent(input$fill, {
-    values$vol <- matrix(rep(input$uni_vol, times=96), nrow=8) %>% 
+    values$vol <- input$uni_vol %>% 
+      as.double() %>%
+      rep(times=96) %>% 
+      matrix(nrow=8) %>% 
       set_rownames(LETTERS[1:8]) %>% 
       set_colnames(1:12)
   })
@@ -52,12 +59,12 @@ shinyServer(function(input, output) {
   
   output$conc_tbl <- renderRHandsontable({
     values$conc %>% 
-      rhandsontable()
+      rhandsontable(maxRows=8, maxCols=12, height=220)
   })
   
   output$vol_tbl <- renderRHandsontable({
     values$vol %>% 
-      rhandsontable()
+      rhandsontable(maxRows=8, maxCols=12, height=220)
   })
   
   output$start_btn <- renderUI({
