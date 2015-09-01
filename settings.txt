@@ -5,7 +5,7 @@ vol_dead: 10                                                          # dead vol
 source_plate: Source1                                                 # labware lable of source plate
 dest plate: Dest1                                                     # labware label of dest plate
 diluent: Source                                                       # labware label of diluent
-username: username                                                    # username of EVOware
-password: password                                                    # password of EVOware
-script_path: D:\user\script.esc                                       # path ot script file
+username: admin                                                       # username of EVOware
+password: admin                                                       # password of EVOware
+script_path: D:\VBA\test.esc                                          # path ot script file, no blank space allowed
 EOVware_path: C:\Program Files (x86)\TECAN\EVOware\Evoware.exe        # path to Evoware.exe

@@ -1,7 +1,9 @@
 
-shinyServer(function(input, output) {
+shinyServer(function(input, output, session) {
   
-  values <- reactiveValues(conc=INIT_MATRIX, vol=INIT_MATRIX)
+  autoInvalidate <- reactiveTimer(2000, session)
+  
+  values <- reactiveValues(conc=INIT_MATRIX, vol=INIT_MATRIX, isEvowareRunning=NULL)
   
   work_plan <- reactive({
     data_frame(position=1:96,
@@ -17,6 +19,12 @@ shinyServer(function(input, output) {
   
   work_list1 <- eventReactive(work_plan(), {
     buildWorklist1(work_plan(), vol_max, vol_min, diluent, dest_plate, n_tips)
+  })
+  
+  
+  observe({
+    autoInvalidate()
+    values$isEvowareRunning <- length(getPid())>0
   })
   
 
@@ -53,7 +61,11 @@ shinyServer(function(input, output) {
   })
   
   observeEvent(input$start_tecan, {
+    disable('start_tecan')
+    text('start_tecan', 'TECAN Running...')
     runWorkplan(work_list(), work_list1(), script_path, EVOware_path, username, password)
+    text('start_tecan', 'Confirm and start TECAN')
+    enable('start_tecan')
   })
   
   
@@ -68,7 +80,8 @@ shinyServer(function(input, output) {
   })
   
   output$start_btn <- renderUI({
-    validate(need(work_plan(), ''))
+    validate(need(work_plan(), ''),
+             need(!values$isEvowareRunning, 'Please shutdown Evoware before start.'))
     actionButton('start_tecan', 'Confirm and start TECAN')
   })
   
@@ -78,7 +91,7 @@ shinyServer(function(input, output) {
       datatable(options=list(dom='ft', paging=F),
                 class='compact hover nowrap order-column row-border stripe',
                 rownames=F) %>% 
-      formatRound(2:7, 1)
+      formatRound(2:7, 4)
   })
 
 

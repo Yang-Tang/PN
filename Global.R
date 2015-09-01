@@ -1,4 +1,5 @@
 library(shiny)
+library(shinyjs)
 library(DT)
 library(rhandsontable)
 library(magrittr)
@@ -210,9 +211,18 @@ runWorkplan <- function(worklist, worklist1, script_path, EVOware_path, username
   # start EVOware and run
   cmd <- paste(paste0('"', EVOware_path, '"'), 
                '-u', username, '-w', password, '-b',
-               '-r', paste0('"', script_path, '"'))
+               '-r', script_path)
   shell(cmd)
   
+}
+
+# get pid of Evoware.exe
+getPid <- function(process='Evoware.exe'){
+  system2('tasklist', stdout=TRUE) %>% 
+    str_match(paste0(process, '\\s+(\\d+)')) %>% 
+    .[,2] %>% 
+    na.omit() %>% 
+    as.numeric()
 }
 
 

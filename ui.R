@@ -1,6 +1,7 @@
 shinyUI(fluidPage(
   
   #titlePanel("Plate Normalizer"),
+  useShinyjs(),
   
   fluidRow(
     
