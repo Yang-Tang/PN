@@ -3,7 +3,11 @@ vol_min: 10                                                           # min volu
 n_tips: 8                                                             # number of LiHa tips
 vol_dead: 10                                                          # dead volumn of source plate
 source_plate: Source1                                                 # labware lable of source plate
-dest plate: Dest1                                                     # labware label of dest plate
+dest_plate: Dest1                                                     # labware lable of dest plate
+source_rows: 16                                                       # rows of source labware, 8 for 96 well plate
+source_cols: 6                                                        # cols of source labware, 12 for 96 well plate
+dest_rows: 8                                                          # rows of dest labware, 8 for 96 well plate
+dest_cols: 12                                                         # cols of dest labware, 12 for 96 well plate
 diluent: Source                                                       # labware label of diluent
 username: admin                                                       # username of EVOware
 password: admin                                                       # password of EVOware

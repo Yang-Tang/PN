@@ -1,11 +1,11 @@
 library(shiny)
 library(shinyjs)
-library(DT)
 library(rhandsontable)
 library(magrittr)
 library(dplyr)
 library(tidyr)
 library(stringr)
+library(readxl)
 
 
 # Variable def ------------------------------------------------------------
@@ -35,34 +35,37 @@ n_tips <- as.numeric(settings[3])
 vol_dead <- as.numeric(settings[4])
 source_plate <- as.character(settings[5])
 dest_plate <- as.character(settings[6])
-diluent <- as.character(settings[7])
-username <- as.character(settings[8])
-password <- as.character(settings[9])
-script_path <- as.character(settings[10])
-EVOware_path <- as.character(settings[11])
+source_nrow <- as.numeric(settings[7])
+source_ncol <- as.numeric(settings[8])
+dest_nrow <- as.numeric(settings[9])
+dest_ncol <- as.numeric(settings[10])
+diluent <- as.character(settings[11])
+username <- as.character(settings[12])
+password <- as.character(settings[13])
+script_path <- as.character(settings[14])
+EVOware_path <- as.character(settings[15])
 
 
 
 # init matrix for conc_init and vol_init of source plate
-INIT_MATRIX <- matrix(rep(as.numeric(NA), times=96), nrow=8) %>% 
-  set_rownames(LETTERS[1:8]) %>% 
-  set_colnames(1:12)
+INIT_MATRIX <- matrix(rep(as.numeric(NA), times=source_nrow*source_ncol), nrow=source_nrow) %>% 
+  set_rownames(LETTERS[1:source_nrow]) %>% 
+  set_colnames(1:source_ncol)
 
 
 # Helper functions --------------------------------------------------------
 
 # read conc data of source plate and convert to a table matrix
 readData <- function(file){
-  file %>% 
-    read.csv() %>% 
-    mutate(Row=str_extract(Well, '^[A-Z]'),
-           Col=as.numeric(str_extract(Well, '\\d+$'))) %>% 
-    select(Row, Col, Value) %>% 
-    right_join(expand.grid(Row=LETTERS[1:8], Col=1:12)) %>% 
-    spread(Col, Value) %>% 
-    select(-Row) %>% 
-    as.matrix() %>% 
-    set_rownames(LETTERS[1:8])
+  tmpfile <- tempfile(fileext='.xls')
+  file.copy(from=file, to=tmpfile)
+  read_excel(tmpfile, skip=0) %>% 
+    select(14) %>% 
+    unlist() %>% 
+    c(rep(NA, times=source_nrow*source_ncol-length(.))) %>% 
+    matrix(nrow=source_nrow) %>% 
+    set_rownames(LETTERS[1:source_nrow]) %>% 
+    set_colnames(1:source_ncol)
 }
 
 
@@ -156,9 +159,14 @@ splitVol <- function(vols, vol_max, vol_min){
 
 
 # build workplan from a data frame with position, conc_init, vol_init columns
-buildWorkplan <- function(data, vol_dead, vol_min, vol_max){
+buildWorkplan <- function(data, vol_dead, vol_min, vol_max, conc_final=NULL){
   if(nrow(data)<2) return()
-  conc_final <- findConcFinal(data$conc_init, data$vol_init, vol_dead, vol_min)
+  max_conc_final <- findConcFinal(data$conc_init, data$vol_init, vol_dead, vol_min)
+  if(is.null(conc_final)){
+    conc_final <- max_conc_final
+  } else {
+    conc_final <- min(conc_final, max_conc_final)
+  }
   conc_threshold <- calcConThreshold(conc_final, vol_max, vol_min)
   data %>% 
     mutate(

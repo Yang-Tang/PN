@@ -5,9 +5,9 @@ shinyUI(fluidPage(
   
   fluidRow(
     
-    column(3),
+    column(1),
     
-    column(6,
+    column(10,
            
            titlePanel("Plate Normalizer"),
            
@@ -18,38 +18,82 @@ shinyUI(fluidPage(
                
                'Source plate',
                
-               #hr(),
-               
-               h3('Concentration'),
-               
-               fileInput('load_conc', 'Load conc'),
-               
-               rHandsontableOutput('conc_tbl'),
-               
-               br(), hr(),
-               
-               h3('Volumn'),
-               
-               numericInput('uni_vol', 'Volumn', 50, 20, 1000, 1, width='100px'),
-               
-               actionButton('fill', 'Fill all'),
+               fluidRow(
+                 
+                 column(
+                   
+                   6,
+                   
+                   h3('Concentration'),
+                   
+                   rHandsontableOutput('conc_tbl'),
+                   
+                   fileInput('load_conc', 'Load concentration from file'),
+                   
+                   numericInput('user_final_conc', 'Final concentration: ', 1, 0.001, 10000, 1, width='40%'),
+                   
+                   checkboxInput('auto_final_conc', 'Dilute to highest possable concentration', F)
+                   
+                 ),
+                 
+                 column(
+                   
+                   6,
+                   
+                   h3('Volumn'),
+                   
+                   rHandsontableOutput('vol_tbl'),
+                   
+                   numericInput('uni_vol', 'Univesal volumn to all wells', 50, 20, 1000, 1, width='50%'),
+                   
+                   actionButton('fill', 'Fill all')
+                   
+                 )
+                 
+               )
 
-               br(), br(),
-               
-               rHandsontableOutput('vol_tbl')
-               
              ),
-             
              
              tabPanel(
                
-               'Work plan',
+               'Dest plate',
                
-               hr(),
+               br(),
                
                uiOutput('start_btn'),
                
-               dataTableOutput('work_plan_DT')
+               fluidRow(
+                 
+                 column(
+                   
+                   6,
+                   
+                   uiOutput('source2dest_title'),
+                   
+                   rHandsontableOutput('source2dest_tbl'),
+                   
+                   uiOutput('finalconc_title'),
+                   
+                   rHandsontableOutput('finalconc_tbl')
+                   
+                 ),
+                 
+                 column(
+                   
+                   6,
+                   
+                   uiOutput('diluent2dest_title'),
+                   
+                   rHandsontableOutput('diluent2dest_tbl'),
+                   
+                   uiOutput('finalvol_title'),
+                   
+                   rHandsontableOutput('finalvol_tbl')
+                   
+                 )
+                 
+                 
+               )
                
              )
              
@@ -58,7 +102,7 @@ shinyUI(fluidPage(
            
     ),
     
-    column(3)
+    column(1)
     
   )
   
